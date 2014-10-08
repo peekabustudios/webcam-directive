@@ -100,9 +100,9 @@ angular.module('webcam', [])
           console.log("cameras : ", availableCameras , "using id : " , camera_tag);
           if(camera_tag == -1)camera_tag = 0;
           if (navigator.getUserMedia) camera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
-          else if (navigator.oGetUserMedia) camera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
-          else if (navigator.mozGetUserMedia) camera_itGetUserMedia) camera_spec = {video: {optional: [spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
-          else if (navigator.webk{sourceId: availableCameras[camera_tag].id}]}};
+          else if (navigator.oGetUserMedia) ncamera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
+          else if (navigator.mozGetUserMedia) camera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
+          else if (navigator.webkitGetUserMedia) camera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
           else if (navigator.msGetUserMedia) camera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}, audio:false};
 
           console.log("camera spec" , camera_spec);
