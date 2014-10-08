@@ -129,57 +129,57 @@ angular.module('webcam', [])
             }
           };
 
-          var detectCameras = function detectCameras( onDetectedCameras ){
+          // var detectCameras = function detectCameras( onDetectedCameras ){
 
-            //isFront = (typeof isFront !== 'undefined' ? isFront : true);
+          //   //isFront = (typeof isFront !== 'undefined' ? isFront : true);
 
-            //helper functions
-            //parse all sources and cast out audio providers
-            function gotSources(sourceInfos) {
-              availableCameras = [];
-              for (var i = 0; i < sourceInfos.length; i++) {
-                if(sourceInfos[i].kind !== 'audio')
-                {
-                  alert(sourceInfos[i].facing);
-                  if(sourceInfos[i].facing == 'user'){
-                    frontCameraId = i;
-                  }else if(sourceInfos[i].facing == 'environment'){
-                    backCameraId = i;
-                  }
-                  availableCameras.push( sourceInfos[i] );
-                }
-              }
-            }
+          //   //helper functions
+          //   //parse all sources and cast out audio providers
+          //   function gotSources(sourceInfos) {
+          //     availableCameras = [];
+          //     for (var i = 0; i < sourceInfos.length; i++) {
+          //       if(sourceInfos[i].kind !== 'audio')
+          //       {
+          //         alert(sourceInfos[i].facing);
+          //         if(sourceInfos[i].facing == 'user'){
+          //           frontCameraId = i;
+          //         }else if(sourceInfos[i].facing == 'environment'){
+          //           backCameraId = i;
+          //         }
+          //         availableCameras.push( sourceInfos[i] );
+          //       }
+          //     }
+          //   }
 
-            //get webrtc version
-            var webrtcDetectedVersion = '';
-            if (navigator.webkitGetUserMedia) webrtcDetectedVersion =
-                    parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2], 10);
-            if (navigator.mozGetUserMedia) webrtcDetectedVersion =
-                    parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1], 10);
+          //   //get webrtc version
+          //   var webrtcDetectedVersion = '';
+          //   if (navigator.webkitGetUserMedia) webrtcDetectedVersion =
+          //           parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2], 10);
+          //   if (navigator.mozGetUserMedia) webrtcDetectedVersion =
+          //           parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1], 10);
           
-            // webrtc version check
-            if (webrtcDetectedVersion >= 30) {
-              MediaStreamTrack.getSources(gotSources);
-            };
+          //   // webrtc version check
+          //   if (webrtcDetectedVersion >= 30) {
+          //     MediaStreamTrack.getSources(gotSources);
+          //   };
 
-            onDetectedCameras();
-          };
+          //   onDetectedCameras();
+          // };
 
-          // Default variables
-          var isStreaming = false,
-            width = element.width = $scope.videoWidth || 320,
-            height = element.height = 0;
+          // // Default variables
+          // var isStreaming = false,
+          //   width = element.width = $scope.videoWidth || 320,
+          //   height = element.height = 0;
 
-          // Check the availability of getUserMedia across supported browsers
-          if (!window.hasUserMedia()) {
-            onFailure({code:-1, msg: 'Browser does not support getUserMedia.'});
-            return;
-          }
+          // // Check the availability of getUserMedia across supported browsers
+          // if (!window.hasUserMedia()) {
+          //   onFailure({code:-1, msg: 'Browser does not support getUserMedia.'});
+          //   return;
+          // }
 
-          detectCameras();
+          // detectCameras();
 
-          setCamera( 0 );
+          // setCamera( 0 );
         };
 
         var triggerStream = function triggerStream( streamInfo ){
