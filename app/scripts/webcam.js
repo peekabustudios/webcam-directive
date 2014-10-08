@@ -188,11 +188,12 @@ angular.module('webcam', [])
 
           console.log('detecting camera');
 
-          detectCameras();
+          detectCameras(function(){
+            console.log('setting camera');
+            setCamera( 0 );
+          });
 
-          console.log('setting camera');
-
-          setCamera( 0 );
+          
         };
 
         var triggerStream = function triggerStream( streamInfo ){
