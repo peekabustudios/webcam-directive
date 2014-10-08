@@ -150,6 +150,7 @@ angular.module('webcam', [])
               for (var i = 0; i < sourceInfos.length; i++) {
                 if(sourceInfos[i].kind !== 'audio')
                 {
+                  console.log(sourceInfos[i]);
                   alert(sourceInfos[i].facing);
                   if(sourceInfos[i].facing === 'user'){
                     frontCameraId = i;
