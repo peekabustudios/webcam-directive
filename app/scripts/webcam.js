@@ -175,20 +175,24 @@ angular.module('webcam', [])
             onDetectedCameras();
           };
 
-          // // Default variables
-          // var isStreaming = false,
-          //   width = element.width = $scope.videoWidth || 320,
-          //   height = element.height = 0;
+          // Default variables
+          var isStreaming = false,
+            width = element.width = $scope.videoWidth || 320,
+            height = element.height = 0;
 
-          // // Check the availability of getUserMedia across supported browsers
-          // if (!window.hasUserMedia()) {
-          //   onFailure({code:-1, msg: 'Browser does not support getUserMedia.'});
-          //   return;
-          // }
+          // Check the availability of getUserMedia across supported browsers
+          if (!window.hasUserMedia()) {
+            onFailure({code:-1, msg: 'Browser does not support getUserMedia.'});
+            return;
+          }
 
-          // detectCameras();
+          console.log('detecting camera');
 
-          // setCamera( 0 );
+          detectCameras();
+
+          console.log('setting camera');
+
+          setCamera( 0 );
         };
 
         var triggerStream = function triggerStream( streamInfo ){
