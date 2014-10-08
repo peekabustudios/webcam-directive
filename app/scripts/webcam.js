@@ -17,7 +17,7 @@
 angular.module('webcam', [])
   .directive('webcam', function () {
     return {
-      template: '<div class="webcam" style="border: 5px #f00 solid;" ng-transclude></div>',
+      template: '<div class="webcam" ng-transclude></div>',
       restrict: 'E',
       replace: true,
       transclude: true,
@@ -32,6 +32,8 @@ angular.module('webcam', [])
       },
       link: function postLink($scope, element) {
         var videoElem, videoStream;
+
+        var availableCameras, frontCameraId = -1, backCameraId = -1;
 
         var onDestroy = function onDestroy() {
           if (!!videoStream && typeof videoStream.stop === 'function') {
@@ -78,6 +80,36 @@ angular.module('webcam', [])
           return;
         };
 
+        //camera tag can be 'front' or 'back' or just id
+        var setCamera = function setCamera( camera_tag ){
+
+          camera_tag = (typeof camera_tag !== 'undefined' ? camera_tag : 0);
+
+          if(camera_tag == 'front'){
+            camera_tag = frontCameraId;
+          }else if(camera_tag == 'back'){
+            camera_tag = backCameraId;
+          };
+
+          //validate camera tag
+          if(camera_tag < 0 || camera_tag > availableCameras.length-1){
+            camera_tag = 0;
+          }; 
+
+          var camera_spec = {};
+          console.log("cameras : ", availableCameras , "using id : " , camera_tag);
+          if(camera_tag == -1)camera_tag = 0;
+          if (navigator.getUserMedia) camera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
+          else if (navigator.oGetUserMedia) camera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
+          else if (navigator.mozGetUserMedia) camera_itGetUserMedia) camera_spec = {video: {optional: [spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}};
+          else if (navigator.webk{sourceId: availableCameras[camera_tag].id}]}};
+          else if (navigator.msGetUserMedia) camera_spec = {video: {optional: [{sourceId: availableCameras[camera_tag].id}]}, audio:false};
+
+          console.log("camera spec" , camera_spec);
+
+          triggerStream(camera_spec);
+        }
+
         var startWebcam = function startWebcam() {
           videoElem = document.createElement('video');
           videoElem.setAttribute('class', 'webcam-live');
@@ -97,6 +129,43 @@ angular.module('webcam', [])
             }
           };
 
+          var detectCameras = function detectCameras( onDetectedCameras ){
+
+            //isFront = (typeof isFront !== 'undefined' ? isFront : true);
+
+            //helper functions
+            //parse all sources and cast out audio providers
+            function gotSources(sourceInfos) {
+              availableCameras = [];
+              for (var i = 0; i < sourceInfos.length; i++) {
+                if(sourceInfos[i].kind !== 'audio')
+                {
+                  alert(sourceInfos[i].facing);
+                  if(sourceInfos[i].facing == 'user'){
+                    frontCameraId = i;
+                  }else if(sourceInfos[i].facing == 'environment'){
+                    backCameraId = i;
+                  }
+                  availableCameras.push( sourceInfos[i] );
+                }
+              }
+            }
+
+            //get webrtc version
+            var webrtcDetectedVersion = '';
+            if (navigator.webkitGetUserMedia) webrtcDetectedVersion =
+                    parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2], 10);
+            if (navigator.mozGetUserMedia) webrtcDetectedVersion =
+                    parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1], 10);
+          
+            // webrtc version check
+            if (webrtcDetectedVersion >= 30) {
+              MediaStreamTrack.getSources(gotSources);
+            };
+
+            onDetectedCameras();
+          };
+
           // Default variables
           var isStreaming = false,
             width = element.width = $scope.videoWidth || 320,
@@ -108,8 +177,13 @@ angular.module('webcam', [])
             return;
           }
 
-          var mediaConstraint = { video: true, audio: false };
-          navigator.getMedia(mediaConstraint, onSuccess, onFailure);
+          detectCameras();
+
+          setCamera( 0 );
+        };
+
+        var triggerStream = function triggerStream( streamInfo ){
+          navigator.getMedia(streamInfo, onSuccess, onFailure);
 
           /* Start streaming the webcam data when the video element can play
            * It will do it only once
@@ -131,7 +205,8 @@ angular.module('webcam', [])
               }
             }
           }, false);
-        };
+
+        }
 
         var stopWebcam = function stopWebcam() {
           onDestroy();
