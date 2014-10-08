@@ -17,7 +17,7 @@
 angular.module('webcam', [])
   .directive('webcam', function () {
     return {
-      template: '<div class="webcam" ng-transclude></div>',
+      template: '<div class="webcam" style="border: 5px #f00 solid;" ng-transclude></div>',
       restrict: 'E',
       replace: true,
       transclude: true,
