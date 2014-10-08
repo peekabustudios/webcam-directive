@@ -33,7 +33,7 @@ angular.module('webcam', [])
       link: function postLink($scope, element) {
         var videoElem, videoStream;
 
-        var availableCameras, frontCameraId = -1, backCameraId = -1;
+        var availableCameras = [], frontCameraId = -1, backCameraId = -1;
 
         var onDestroy = function onDestroy() {
           if (!!videoStream && typeof videoStream.stop === 'function') {
@@ -96,16 +96,19 @@ angular.module('webcam', [])
             cameraTag = backCameraId;
           }
 
+          console.log('message before validation');
           //validate camera tag
           if(cameraTag < 0 || cameraTag > availableCameras.length-1){
             cameraTag = 0;
           }
+          console.log('message after validation');
 
           var cameraSpec = {};
           console.log('cameras : ', availableCameras , 'using id : ' , cameraTag);
           if(cameraTag === -1){
             cameraTag = 0;
           }
+
           if (navigator.getUserMedia){
             cameraSpec = {video: {optional: [{sourceId: availableCameras[cameraTag].id}]}};
           }else if (navigator.oGetUserMedia){
