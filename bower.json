@@ -8,9 +8,9 @@
     "angular-mocks": "~1.0.5",
     "angular-scenario": "~1.0.5"
   },
-  "homepage": "https://github.com/jonashartmann/webcam-directive",
+  "homepage": "https://github.com/peekabu/webcam-directive",
   "authors": [
-    "Jonas Hartmann (jonas.hartmann@ymail.com)"
+    "Jacek Dudek (jacek@peekabu.com)"
   ],
   "description": "Angularjs directive to access the webcam",
   "main": "app/scripts/webcam.js",
