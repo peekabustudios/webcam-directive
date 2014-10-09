@@ -32,8 +32,8 @@ angular.module('webcam', [])
       },
       link: function postLink($scope, element) {
         var videoElem, videoStream;
-
         var availableCameras = [], frontCameraId = -1, backCameraId = -1;
+        var isStreaming = false;
 
         var onDestroy = function onDestroy() {
           if (!!videoStream && typeof videoStream.stop === 'function') {
@@ -180,8 +180,7 @@ angular.module('webcam', [])
           };
 
           // Default variables
-          var isStreaming = false,
-            width = element.width = $scope.videoWidth || 320,
+          var width = element.width = $scope.videoWidth || 320,
             height = element.height = 0;
 
           // Check the availability of getUserMedia across supported browsers
@@ -208,6 +207,7 @@ angular.module('webcam', [])
            */
           videoElem.addEventListener('canplay', function() {
             if (!isStreaming) {
+              console.log("width : " + width + " videoElem.videoWidth : " + videoElem.videoWidth + " " + $scope.videoHeight);
               var scale = width / videoElem.videoWidth;
               height = (videoElem.videoHeight * scale) || $scope.videoHeight;
               videoElem.setAttribute('width', width);
