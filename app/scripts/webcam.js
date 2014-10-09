@@ -160,6 +160,7 @@ angular.module('webcam', [])
                   availableCameras.push( sourceInfos[i] );
                 }
               }
+              onDetectedCameras();
             }
 
             //get webrtc version
@@ -176,7 +177,6 @@ angular.module('webcam', [])
               MediaStreamTrack.getSources(gotSources);
             }
 
-            onDetectedCameras();
           };
 
           // Default variables
