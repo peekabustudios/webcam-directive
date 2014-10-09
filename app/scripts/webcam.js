@@ -69,6 +69,7 @@ angular.module('webcam', [])
 
         // called when any error happens
         var removeLoader = function removeLoader() {
+          console.log("removing loader");
           if (placeholder) {
             angular.element(placeholder).remove();
           }
