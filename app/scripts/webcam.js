@@ -48,6 +48,8 @@ angular.module('webcam', [])
         var onSuccess = function onSuccess(stream) {
           videoStream = stream;
 
+          console.log(stream);
+
           // Firefox supports a src object
           if (navigator.mozGetUserMedia) {
             videoElem.mozSrcObject = stream;
