@@ -17,7 +17,7 @@
 angular.module('webcam', [])
   .directive('webcam', function () {
     return {
-      template: '<div class="webcam"></div>',
+      template: '<div class="webcam"><img src="https://github.com/coryalder/Interface-Elements/blob/master/camera_switch.png"></div>',
       restrict: 'E',
       replace: true,
       transclude: true,
