@@ -34,6 +34,7 @@ angular.module('webcam', [])
         var videoElem, videoStream;
         var availableCameras = [], frontCameraId = -1, backCameraId = -1;
         var isStreaming = false;
+        var placeholder = null;
 
         var onDestroy = function onDestroy() {
           if (!!videoStream && typeof videoStream.stop === 'function') {
