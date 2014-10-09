@@ -17,7 +17,7 @@
 angular.module('webcam', [])
   .directive('webcam', function () {
     return {
-      template: '<div class="webcam" ng-transclude></div>',
+      template: '<div class="webcam"></div>',
       restrict: 'E',
       replace: true,
       transclude: true,
@@ -32,7 +32,8 @@ angular.module('webcam', [])
       },
       link: function postLink($scope, element) {
         var videoElem, videoStream;
-        var availableCameras = [], frontCameraId = -1, backCameraId = -1;
+        var availableCameras = [], frontCameraId = -1, backCameraId = -1,
+            currentCameraId = 0;
         var isStreaming = false;
         var placeholder = null;
 
@@ -127,6 +128,8 @@ angular.module('webcam', [])
 
           console.log('camera spec' , cameraSpec);
 
+          currentCameraId = cameraTag;
+
           triggerStream(cameraSpec);
         };
 
@@ -193,11 +196,19 @@ angular.module('webcam', [])
 
           detectCameras(function(){
             console.log('setting camera');
-            setCamera( 0 );
+            setCamera( currentCameraId );
           });
 
           
         };
+
+        var swapCameras = function swapCameras(){
+          currentCameraId++;
+          if( currentCameraId >= availableCameras.length){
+            currentCameraId = 0;
+          }
+          setCamera( currentCameraId );
+        }
 
         var triggerStream = function triggerStream( streamInfo ){
           navigator.getMedia(streamInfo, onSuccess, onFailure);
