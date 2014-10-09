@@ -181,10 +181,6 @@ angular.module('webcam', [])
 
           };
 
-          // Default variables
-          var width = element.width = $scope.videoWidth || 320,
-            height = element.height = 0;
-
           // Check the availability of getUserMedia across supported browsers
           if (!window.hasUserMedia()) {
             onFailure({code:-1, msg: 'Browser does not support getUserMedia.'});
@@ -208,6 +204,12 @@ angular.module('webcam', [])
            * It will do it only once
            */
           videoElem.addEventListener('canplay', function() {
+
+            // Default variables
+            var width = element.width = $scope.videoWidth || 320,
+                height = element.height = 0;
+
+
             if (!isStreaming) {
               console.log("width : " + width + " videoElem.videoWidth : " + videoElem.videoWidth + " " + $scope.videoHeight);
               var scale = width / videoElem.videoWidth;
