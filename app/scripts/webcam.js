@@ -28,8 +28,8 @@ angular.module('webcam', [])
 			onStreaming: '&',
 			//=========
 			// dependent on each other
-			onGotBytearray : '=',
-			getBytearray: '=',
+			onGotBytearray : '&',
+			getBytearray: '=?',
 			//=========
 			placeholder: '=',
 			streamWidth: '=',
@@ -40,6 +40,14 @@ angular.module('webcam', [])
 			fps: '='
 		},
 		link: function postLink($scope, element) {
+
+				//set default values for functions if non existent
+				if( !$scope.onGotBytearray ){
+					$scope.onGotBytearray = function(){};
+				}
+				if( !$scope.getBytearray ){
+					$scope.getBytearray = function(){};
+				}
 				// static vars
 				var FLASH_FILE_PATH = 'jscam_canvas_only.swf';
 				var CAMERA_SWITCH_IMAGE_URL = 'https://raw.githubusercontent.com/coryalder/Interface-Elements/master/camera_switch.png';
@@ -182,9 +190,12 @@ angular.module('webcam', [])
 					var imgdata = ctx.getImageData(0,0, backCanvasElem.width, backCanvasElem.height).data;
 					//return parseBytearrayRGB2GREY(imgdata);
 					if( $scope.onGotBytearray ){
-						$scope.onGotBytearray(parseBytearrayRGB2GREY(imgdata));
+						$scope.onGotBytearray({data:parseBytearrayRGB2GREY(imgdata)});
 					}
 				}
+
+				//$scope.onGotBytearray({data:'foo'});
+
 				//==========================
 				
 				//==========================
@@ -254,7 +265,7 @@ angular.module('webcam', [])
                   //call callback function
                  	if($scope.onGotBytearray){
                  		console.log('calling on Success ' , webcam.onSuccess , final_array );
-                 		$scope.onGotBytearray( final_array );
+                 		$scope.onGotBytearray({data: final_array });
                  	}
                  	flashObj.reset();
                };
