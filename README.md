@@ -6,6 +6,8 @@ Supports Chrome, Firefox, Safari, IE >= 9, Chrome Mobile.
 Provides functionality to swap cameras if more than two detected.
 Allows to get pixels from the camera feed.
 
+__For flash support to work make sure to copy 'jscam_canvas_only.swf' from git://github.com/infusion/jQuery-webcam.git to the root website directory__
+
 
 ## Use
 
