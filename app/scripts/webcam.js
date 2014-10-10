@@ -113,19 +113,19 @@ angular.module('webcam', [])
 						return;
 					}
 					
-					//prepare DOM elements
-					loadDOMElements();
-
-					//setup placeholder
-					if ($scope.placeholder) {
-						var placeholder = document.createElement('img');
-						placeholder.setAttribute('class', 'webcam-loader');
-						placeholder.src = $scope.placeholder;
-						element.append(placeholder);
-					}
-
 					//detect cameras
 					var onCamerasDetected = function onCamerasDetected(){
+						//prepare DOM elements
+						loadDOMElements();
+
+						//setup placeholder
+						if ($scope.placeholder) {
+							var placeholder = document.createElement('img');
+							placeholder.setAttribute('class', 'webcam-loader');
+							placeholder.src = $scope.placeholder;
+							element.append(placeholder);
+						}
+
 						if( cameraInfo.facing.hasFacing() ){
 							cameraInfo.current.id = cameraInfo.facing.id[cameraInfo.facing.default];
 						}
@@ -181,7 +181,9 @@ angular.module('webcam', [])
 					// get data from back canvas
 					var imgdata = ctx.getImageData(0,0, backCanvasElem.width, backCanvasElem.height).data;
 					//return parseBytearrayRGB2GREY(imgdata);
-					$scope.onGotBytearray(parseBytearrayRGB2GREY(imgdata));
+					if( $scope.onGotBytearray ){
+						$scope.onGotBytearray(parseBytearrayRGB2GREY(imgdata));
+					}
 				}
 				//==========================
 				
