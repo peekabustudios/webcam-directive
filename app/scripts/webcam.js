@@ -24,10 +24,13 @@ angular.module('webcam', [])
 		scope:
 		{
 			onError: '&',
-			onStream: '&',
+			onStarted: '&',
 			onStreaming: '&',
+			//=========
+			// dependent on each other
+			onGotBytearray : '=',
 			getBytearray: '=',
-			//datasource: '=',
+			//=========
 			placeholder: '=',
 			streamWidth: '=',
 			streamHeight: '=',
@@ -38,7 +41,8 @@ angular.module('webcam', [])
 		},
 		link: function postLink($scope, element) {
 				// static vars
-				var CAMERA_SWITCH_IMAGE_URL = "https://raw.githubusercontent.com/coryalder/Interface-Elements/master/camera_switch.png";
+				var FLASH_FILE_PATH = 'jscam_canvas_only.swf';
+				var CAMERA_SWITCH_IMAGE_URL = 'https://raw.githubusercontent.com/coryalder/Interface-Elements/master/camera_switch.png';
 				var CAMERA_SWITCH_OFFSET = 10;
 				// intervals
 				var	canvasUpdateInterval = null;
@@ -49,16 +53,20 @@ angular.module('webcam', [])
 						placeholder     = null,
 						switchCameraImg = null;
 
-				// elements information
+				// element information (canvas/drawing part)
+				// 	with default values
 				var elementInfo = {
+					hasWebRTC : true,
 					hasPlaceholder : false,
-					hasSwitchCamera : true,
+					hasSwitchCamera : false,
 					fps : 30,
 					dims: {
 						width   : 320,
 						height  : 240
 					}
 				};
+				// camera infromation (facing, dimensions of feed, current data)
+				// 	with default values
 				var cameraInfo = {
 					isStreaming : false,
 					availableCameras : [],
@@ -81,13 +89,14 @@ angular.module('webcam', [])
 						width       : 320,
 						height      : 240
 					}
-				}
+				};
+				// drawing information (required if feed has different aspect ratio than element)
+				// 	with defaults
 				var drawInfo = {
 					aspectRatioElem : 1,
 					aspectRatioFeed : 1,
-					scale : 1,
 					renderRect : null
-				}
+				};
 
 				//==========================
 				//start camera
@@ -95,6 +104,14 @@ angular.module('webcam', [])
 
 					//parse overriding attributes
 					parseAttributes();
+
+					//check user media support and version
+					if(!webrtcValid()){
+						//load flash
+						elementInfo.hasWebRTC = false;
+						loadFlashFallback();
+						return;
+					}
 					
 					//prepare DOM elements
 					loadDOMElements();
@@ -107,18 +124,9 @@ angular.module('webcam', [])
 						element.append(placeholder);
 					}
 
-					//check user media support and version
-					if(!webrtcValid()){
-						return;
-					}
-
 					//detect cameras
 					var onCamerasDetected = function onCamerasDetected(){
-						console.log('setting camera');
-						//alert( 'has facing :' + cameraInfo.facing.hasFacing() );
 						if( cameraInfo.facing.hasFacing() ){
-							//alert(' facing default : ' + cameraInfo.facing.default);
-							//alert(' facing id : ' + cameraInfo.facing.id[cameraInfo.facing.default]);
 							cameraInfo.current.id = cameraInfo.facing.id[cameraInfo.facing.default];
 						}
 						setCamera( cameraInfo.current.id );
@@ -137,9 +145,6 @@ angular.module('webcam', [])
 					if (!!cameraInfo.current.stream && typeof cameraInfo.current.stream.stop === 'function') {
 						cameraInfo.current.stream.stop();
 					}
-					// if (!!videoElem) {
-					// 	delete videoElem.src;            
-					// }
 					if (!!canvasUpdateInterval){
 						window.clearInterval(canvasUpdateInterval);
 					}
@@ -165,12 +170,18 @@ angular.module('webcam', [])
 				//==========================
 				//get bytearray
 				$scope.getBytearray = function(){
+					//if running flash
+					if( !elementInfo.hasWebRTC ){
+						webcam.capture();
+						return;
+					}
 					//put pixels onto backCanvas
 					var ctx = backCanvasElem.getContext('2d');
 					ctx.drawImage(videoElem,0,0,backCanvasElem.width, backCanvasElem.height);
 					// get data from back canvas
 					var imgdata = ctx.getImageData(0,0, backCanvasElem.width, backCanvasElem.height).data;
-					return parseBytearrayRGB2GREY(imgdata);
+					//return parseBytearrayRGB2GREY(imgdata);
+					$scope.onGotBytearray(parseBytearrayRGB2GREY(imgdata));
 				}
 				//==========================
 				
@@ -184,11 +195,84 @@ angular.module('webcam', [])
 					return greyScale;
 				}
 				//==========================
-
-
-
-
 				
+				//==========================
+				// flash fallback
+				var flashObj = null;
+				var loadFlashFallback = function loadFlashFallback(){
+					flashObj = {
+	                row_counter : 0,
+	                frame : "",
+	                reset : function(){
+	                    this.row_counter = 0;
+	                    this.frame = "";
+	                }
+	            };
+
+	            //call the jquery.webcam function
+	            //	that sets up flash element inside elem
+					element.webcam({
+                    width: 320,
+                    height: 240,
+                    mode: "callback",
+                    swffile: FLASH_FILE_PATH,
+                    onTick: function(a,b) {},
+                    onSave: function(a) {
+                        flashObj.frame += a;
+                        flashObj.row_counter++;
+                        if(flashObj.row_counter >= 240) onGotFrame();
+                    },
+                    onCapture: function(a,b) {
+                        webcam.save();
+                    },
+                    debug: function(a,b) {
+                        if(b == "Camera started"){
+                        	if ($scope.onStarted) {
+										$scope.onStarted();
+									}
+                        }
+                        else if( b == "Flash movie not yet registered!" || b == "No camera was detected."){
+                           if ($scope.onError) {
+										$scope.onError({err:'no camera available'});
+									}
+                        }
+                    },
+                    onLoad: function() { }
+               });
+					//helper functions
+					function onGotFrame(){
+						//parse data
+                  var frame_array = flashObj.frame.split(";");
+                  var final_array = new Uint8Array(76800)
+                  //transform to grey array
+                  for(var i = 1 ; i < frame_array.length ; i ++){
+                     var rgb = hexToRgb(decimalToHex(frame_array[i]));
+                     final_array[i] = rgb2greyscale(rgb);
+                  }
+                  //call callback function
+                 	if($scope.onGotBytearray){
+                 		console.log('calling on Success ' , webcam.onSuccess , final_array );
+                 		$scope.onGotBytearray( final_array );
+                 	}
+                 	flashObj.reset();
+               };
+               function decimalToHex(d) {
+                  var hex = Number(d).toString(16);
+                  hex = "000000".substr(0, 6 - hex.length) + hex;
+                  return hex;
+               }
+               function hexToRgb(hex) {
+                  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                  return result ? {
+                  	r: parseInt(result[1], 16),
+                     g: parseInt(result[2], 16),
+                  	b: parseInt(result[3], 16)
+                  } : null;
+                }
+                function rgb2greyscale(v){
+                    return Math.floor(v.r*0.2126 +v.g*0.7152 + v.b*0.0722);
+                }
+				}
 
 				/**
 				 * parseAttributes 
@@ -221,7 +305,6 @@ angular.module('webcam', [])
 					}
 					//set element aspect ratio
 					aspectRatioElem = elementInfo.dims.width/elementInfo.dims.height;
-
 				};
 
 				/**
@@ -245,7 +328,7 @@ angular.module('webcam', [])
 					canvasElem.onmousedown = canvasClick;
 					//add to core element
 					element.append(canvasElem);
-
+					//add switch camera button if required
 					if(elementInfo.hasSwitchCamera){
 						switchCameraImg = document.createElement('img');
 						switchCameraImg.src = CAMERA_SWITCH_IMAGE_URL;
@@ -259,22 +342,24 @@ angular.module('webcam', [])
 				 * @return true or false
 				 */
 				var webrtcValid = function webrtcValid(){
+					//check user media support
 					if (!window.hasUserMedia()) {
-						onFailure({code:-1, msg: 'Browser does not support getUserMedia.'});
 						return false;
 					}
 
 					//get webrtc version
 					var webrtcDetectedVersion = '';
+					var found = false;
 					if (navigator.webkitGetUserMedia){
 						webrtcDetectedVersion = parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2], 10);
+						found = true;
 					}
 					if (navigator.mozGetUserMedia){
 						webrtcDetectedVersion = parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1], 10);
+						found = true;
 					}
-
 					// webrtc version check
-					if (webrtcDetectedVersion >= 30) {
+					if (webrtcDetectedVersion >= 30 && found == true) {
 						return true;
 					}
 					return false;
@@ -293,7 +378,6 @@ angular.module('webcam', [])
 						for (var i = 0; i <  streams.length; i++) {
 							if( streams[i].kind !== 'audio')
 							{
-								console.log( streams[i] );
 								//check for facing parameter
 								if( streams[i].facing === 'user'){
 									//alert( 'setting front camera' + cameraInfo.availableCameras.length );
@@ -305,10 +389,12 @@ angular.module('webcam', [])
 								cameraInfo.availableCameras.push(  streams[i] );
 							}
 						}
+						if(cameraInfo.availableCameras.length > 1){
+							elementInfo.hasSwitchCamera = true;
+						}
 						//we detected cameras -> callback
 						onDetectedCameras();
 					}
-
 					MediaStreamTrack.getSources(gotSources);
 				};
 				//===========================
@@ -324,16 +410,12 @@ angular.module('webcam', [])
 				var setCamera = function setCamera( cameraTag ){
 					var availableCameras = cameraInfo.availableCameras;
 
-					cameraTag = (typeof cameraTag !== 'undefined' ? cameraTag : 0);
-
-					console.log('message before validation');
 					//validate camera tag
+					cameraTag = (typeof cameraTag !== 'undefined' ? cameraTag : 0);
 					if(cameraTag < 0 || cameraTag >= availableCameras.length){
 						cameraTag = 0;
 					}
-					console.log('message after validation');
 
-					console.log('cameras : ', availableCameras , 'using id : ' , cameraTag);
 					//set stream specification object
 					var streamSpec = {};
 					if (navigator.getUserMedia){
@@ -347,11 +429,9 @@ angular.module('webcam', [])
 					}else if (navigator.msGetUserMedia){
 						streamSpec = {video: {optional: [{sourceId: availableCameras[cameraTag].id}]}, audio:false};
 					}
-
-					console.log('camera spec' , streamSpec);
+					//set global vars
 					cameraInfo.current.streamSpec = streamSpec;
 					cameraInfo.current.id = cameraTag;
-
 					//trigger stream with specification
 					triggerStream( streamSpec );
 				};
@@ -361,12 +441,10 @@ angular.module('webcam', [])
 				 * 						using provided specs
 				 */
 				var triggerStream = function triggerStream( streamInfo ){
-					//onStream success function
+					//onStarted success function
 					// called when camera stream is loaded
 					var onSuccess = function onSuccess(stream) {
 						cameraInfo.current.stream = stream;
-
-						console.log(stream);
 
 						// Firefox supports a src object
 						if (navigator.mozGetUserMedia) {
@@ -380,13 +458,11 @@ angular.module('webcam', [])
 						videoElem.play();
 
 						/* Call custom callback */
-						if ($scope.onStream) {
-							$scope.onStream({stream: stream, video: videoElem});
+						if ($scope.onStarted) {
+							$scope.onStarted({stream: stream, video: videoElem});
 						}
-
 						// set canvas update interval
 						canvasUpdateInterval = setInterval(canvasRedraw,1000/elementInfo.fps);
-						
 					};
 					//called on failure
 					var onFailure = function onFailure(err) {
@@ -394,12 +470,10 @@ angular.module('webcam', [])
 						if (console && console.log) {
 							console.log('The following error occured: ', err);
 						}
-
 						/* Call custom callback */
 						if ($scope.onError) {
 							$scope.onError({err:err});
 						}
-
 						return;
 					};
 					//check if previous stream is running
@@ -415,35 +489,22 @@ angular.module('webcam', [])
 					videoElem.addEventListener('canplay', function() {
 						// check if it's not streaming already
 						if (!cameraInfo.isStreaming) {
-
-							//alert(" feed width : " + videoElem.videoWidth);
-							//alert(" feed height : " + videoElem.videoHeight);
 							//update drawInfo
+							//	if necessary
 							drawInfo.aspectRatioFeed = videoElem.videoWidth/videoElem.videoHeight;
 							if(drawInfo.aspectRatioFeed != drawInfo.aspectRatioElem){
 								updateRenderRect();
 							}
-
-							
-
-							//adjust aspect ration with width priority
-							// console.log("width : " + width + " videoElem.videoWidth : " + videoElem.videoWidth + " " + $scope.videoHeight);
-							// var scale = cameraInfo.dims.width / videoElem.videoWidth;
-							// height = (videoElem.videoHeight * scale) || $scope.videoHeight;
-							// videoElem.setAttribute('width', width);
-							// videoElem.setAttribute('height', height);
+							//camera is streaming
 							cameraInfo.isStreaming = true;
-							// console.log('Started streaming');
-
+							//remove placeholder
 							removeLoader();
-
 							/* Call custom callback */
 							if ($scope.onStreaming) {
 								$scope.onStreaming({video:videoElem});
 							}
 						}
 					}, false);
-
 				};
 
 				/**
@@ -452,13 +513,12 @@ angular.module('webcam', [])
 				var oldVideoWidth = 0;
 				var canvasRedraw = function canvasRedraw(){
 					if(cameraInfo.isStreaming){
-						//watch for change
+						//watch for feed dimension change
 						if(videoElem.videoWidth != oldVideoWidth) {
-							//alert('changing width');
 							updateRenderRect();
 							oldVideoWidth = videoElem.videoWidth;
 						}
-
+						// draw feed to canvas
 						var ctx = canvasElem.getContext('2d');
 						var drawRect = ( drawInfo.renderRect ? drawInfo.renderRect : {x:0,y:0,width:canvasElem.width,height:canvasElem.height});
 						ctx.drawImage(videoElem,drawRect.x,drawRect.y,drawRect.width, drawRect.height);
@@ -467,25 +527,34 @@ angular.module('webcam', [])
 						}
 					}
 				}
+				/**
+				 * updateRenderRect
+				 * 		compares feed and element aspect ratio
+				 * 		and crops the feed so it fits nicely
+				 * 		inside the element
+				 */
 				var updateRenderRect = function updateRenderRect(){
-					//if too vertical
+					//get new aspect ratio
 					drawInfo.aspectRatioFeed = videoElem.videoWidth/videoElem.videoHeight;
+					//if too 'vertical'
 					if(drawInfo.aspectRatioFeed < drawInfo.aspectRatioElem){
 						var scale = elementInfo.dims.width/videoElem.videoWidth;
 						var newHeight = videoElem.videoHeight*scale;
 						var newY = -(newHeight-elementInfo.dims.height)/2;
-
+						//setup render rect with new values
 						drawInfo.renderRect = {
 							x: 0,
 							y: newY,
 							width : elementInfo.dims.width,
 							height : newHeight
 						}
-					}else if(drawInfo.aspectRatioFeed > drawInfo.aspectRatioElem){
+					}
+					//if too 'horizontal'
+					else if(drawInfo.aspectRatioFeed > drawInfo.aspectRatioElem){
 						var scale = elementInfo.dims.height/videoElem.videoHeight;
 						var newWidth = videoElem.videoWidth*scale;
 						var newX = -(newWidth-elementInfo.dims.width)/2;
-
+						//setup render rect with new values
 						drawInfo.renderRect = {
 							x: newX,
 							y: 0,
@@ -494,8 +563,11 @@ angular.module('webcam', [])
 						}
 					}
 				}
+				/**
+				 * canvasClick
+				 * 	detect swap camera button click
+				 */
 				var canvasClick = function canvasClick(e){
-					console.log(e);
 					if(elementInfo.hasSwitchCamera){
 						var minX = canvasElem.width - CAMERA_SWITCH_OFFSET- switchCameraImg.width;
 						var maxX = minX + switchCameraImg.width;
@@ -503,7 +575,6 @@ angular.module('webcam', [])
 						var maxY = minY + switchCameraImg.height;
 						if(e.layerX > minX && e.layerX < maxX &&
 							e.layerY > minY && e.layerY < maxY){
-							console.log('hit');
 							swapCameras();
 						}
 					} 
@@ -511,7 +582,6 @@ angular.module('webcam', [])
 
 				// called when any error happens
 				var removeLoader = function removeLoader() {
-					console.log("removing placeholder");
 					if (placeholder) {
 						angular.element(placeholder).remove();
 					}
@@ -521,9 +591,7 @@ angular.module('webcam', [])
 				 $scope.$on('START_WEBCAM', startWebcam);
 				 $scope.$on('STOP_WEBCAM', stopWebcam);
 
-				 //setupFeedResizeListener();
 				 startWebcam();
-
 			 }
 		 };
 	 }]);
