@@ -317,7 +317,7 @@ angular.module('webcam', [])
 						elementInfo.fps = $scope.fps;
 					}
 					//set element aspect ratio
-					aspectRatioElem = elementInfo.dims.width/elementInfo.dims.height;
+					drawInfo.aspectRatioElem = elementInfo.dims.width/elementInfo.dims.height;
 				};
 
 				/**
