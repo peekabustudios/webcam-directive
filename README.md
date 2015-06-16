@@ -26,6 +26,17 @@ $ bower install https://github.com/peekabustudios/webcam-directive.git#develop
 <webcam></webcam>
 ```
 
+add 'webcam' as an Angular dependency:
+```
+angular.module('myApp', [
+    'ngAnimate',
+    'ngCookies',
+    'ngRoute',
+    'ngTouch',
+    'webcam'
+  ])
+```
+
 #### Callbacks
 ```js
 <webcam on-started="onStarted(stream,video)"
